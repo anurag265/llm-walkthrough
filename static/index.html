@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LLM Walkthrough · Prex Studio</title>
+<meta name="author" content="Anurag Kumar, Prex Studio">
+<link rel="icon" href="/static/brand/favicon.ico">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="layout">
+  <main id="stages">
+    <header class="top">
+      <a class="brand" href="https://prex.studio" target="_blank" rel="noopener" aria-label="Prex Studio">
+        <img class="on-light" src="/static/brand/prex-wordmark-animated.svg" alt="Prex Studio">
+        <img class="on-dark" src="/static/brand/prex-wordmark-dark-animated.svg" alt="Prex Studio">
+      </a>
+      <h1 class="title-wide">How an LLM answers a question</h1>
+      <div class="top-right">
+        <p class="model-line">Loading model...</p>
+        <p class="status"></p>
+      </div>
+      <button class="menu-btn" id="menu-open" aria-label="Open controls" aria-expanded="false">&#9776;</button>
+    </header>
+    <div class="intro">
+      <h1>How an LLM answers a question</h1>
+      <p class="status"></p>
+    </div>
+
+    <div class="io">
+      <section class="prompt-box" data-stage="0">
+        <label for="prompt">User prompt <span class="hint">Shift+Enter for a new line</span></label>
+        <textarea id="prompt" rows="1" autocomplete="off" spellcheck="false">What is capital of India?</textarea>
+      </section>
+      <section class="stage response-box" data-stage="6">
+        <h2><span class="num">6</span>Response, one token at a time</h2>
+        <div class="box response" id="response"></div>
+      </section>
+    </div>
+    <p class="loop" id="loop">&#8635; Each new token is appended to the input and the whole input runs again, until the model emits &lt;end&gt;</p>
+
+    <section class="stage tokens-stage" data-stage="1" data-stage-to="2">
+      <h2><span class="num" data-num="1">1</span>Tokenizer <span class="then">&rarr;</span> <span class="num" data-num="2">2</span>Token IDs
+        <span class="sub" id="ids-sub">Text splits into tokens; each token becomes its number in the vocabulary</span></h2>
+      <div class="chips" id="tokens"></div>
+    </section>
+
+    <div class="core">
+      <section class="stage" data-stage="3">
+        <h2><span class="num">3</span>Transformer (neural network)</h2>
+        <p class="sub">Attention lets every token look at the others, then every possible next token gets a score</p>
+        <div id="diagram"></div>
+        <p class="reads" id="reads"></p>
+        <p class="note" id="cache-note" hidden></p>
+        <p class="sub small" id="attn-note" hidden>Blue on the tokens above = how much the last token looked at each one (averaged over all layers and heads). The first token soaks up most attention in almost every model (an "attention sink"), so it is left off the scale.</p>
+      </section>
+      <div class="right">
+        <section class="stage" data-stage="4">
+          <h2><span class="num">4</span>Softmax: probability of each next token</h2>
+          <p class="sub" id="softmax-sub">Scores become probabilities. The model picks one. Click a bar to pick it yourself.</p>
+          <div id="bars"></div>
+        </section>
+        <section class="stage" data-stage="5">
+          <h2><span class="num">5</span>Detokenizer <span class="sub inline">ID back to text</span></h2>
+          <div class="box" id="detok"></div>
+        </section>
+      </div>
+    </div>
+
+    <footer>
+      <span>Made with <span class="heart" role="img" aria-label="love">&#10084;&#65039;</span> by <a href="https://prex.studio" target="_blank" rel="noopener">Prex Studio</a>.</span>
+      <span>&copy; 2026 Prex Studio. <a href="#credits" id="credits-link">Credit</a>.</span>
+    </footer>
+  </main>
+
+  <div class="mini" id="mini">
+    <button id="m-back" title="Back (B)">&larr;</button>
+    <button id="m-next" class="primary" title="Next (N)">Next &rarr;</button>
+    <button id="m-open" title="Show controls (H)">&#9776;</button>
+  </div>
+
+  <aside class="panel">
+    <div class="panel-head">
+      <span>Controls</span>
+      <button id="collapse" title="Hide controls (H)">Hide &raquo;</button>
+      <button class="menu-btn" id="menu-close" aria-label="Close controls">&#10005;</button>
+    </div>
+    <p class="model-line menu-only">Loading model...</p>
+    <div class="buttons">
+      <button id="back" title="Back (B or Left arrow)">&larr; Back <kbd>B</kbd></button>
+      <button id="next" class="primary" title="Next (N, Right arrow or Space)">Next &rarr; <kbd>N</kbd></button>
+      <button id="auto" title="Auto-play (A), Pause (P)">&#9654; Auto-play <kbd>A</kbd></button>
+      <button id="finish" title="Skip to end (S)">Skip to end <kbd>S</kbd></button>
+      <button id="reset" title="Reset (R)">Reset <kbd>R</kbd></button>
+    </div>
+    <p class="pass" id="pass"></p>
+    <p class="keys">Keys: N next, B back, A auto, P pause, S skip, R reset, T hidden tokens, H hide controls</p>
+
+    <h3>Input</h3>
+    <label class="knob"><input type="checkbox" id="k-template" checked> Use chat template <small>(resets)</small></label>
+    <label class="knob"><input type="checkbox" id="k-hidden"> Show hidden template tokens <kbd>T</kbd></label>
+    <label class="knob"><input type="checkbox" id="k-spaces"> Show spaces as &#9251;</label>
+
+    <h3>Picking the next token</h3>
+    <label class="knob col">Temperature <output id="o-temp">0</output>
+      <input type="range" id="k-temp" min="0" max="1.5" step="0.1" value="0">
+      <small>0 = always the likeliest. Higher = more random.</small></label>
+    <label class="knob col">Seed <input type="number" id="k-seed" value="42" min="0"></label>
+    <label class="knob col">Candidates shown <output id="o-topk">4</output>
+      <input type="range" id="k-topk" min="2" max="10" value="4"></label>
+    <label class="knob col">Max new tokens <output id="o-max">40</output>
+      <input type="range" id="k-max" min="5" max="150" step="5" value="40"></label>
+
+    <h3>What to show</h3>
+    <label class="knob"><input type="checkbox" id="k-logits"> Raw scores (logits)</label>
+    <label class="knob"><input type="checkbox" id="k-attn" checked> Attention heat</label>
+    <label class="knob"><input type="checkbox" id="k-cache"> KV-cache note</label>
+    <label class="knob"><input type="checkbox" id="k-big"> Big text (projector)</label>
+    <label class="knob"><input type="checkbox" id="k-dark"> Dark theme</label>
+
+    <h3>Auto-play</h3>
+    <label class="knob col">Speed <output id="o-speed">0.8s</output>
+      <input type="range" id="k-speed" min="0.2" max="3" step="0.2" value="0.8"></label>
+  </aside>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+<dialog id="credits">
+  <h2>Credits</h2>
+  <dl>
+    <dt>Created by</dt>
+    <dd>Anurag Kumar, <a href="https://prex.studio" target="_blank" rel="noopener">Prex Studio</a>.</dd>
+    <dt>License</dt>
+    <dd><a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache License 2.0</a>. Free to use, change and share, provided as is. Keep the NOTICE file with any copy. The Prex Studio name and logo are not licensed.</dd>
+    <dt>Model</dt>
+    <dd>Qwen2.5-0.5B-Instruct by the Qwen team, Alibaba Cloud. Apache License 2.0. Runs locally on this computer.</dd>
+    <dt>Fonts</dt>
+    <dd>Newsreader and Hanken Grotesk. SIL Open Font License 1.1.</dd>
+    <dt>Built with</dt>
+    <dd>PyTorch, Hugging Face Transformers, FastAPI and Uvicorn, each under its own license.</dd>
+  </dl>
+  <p class="fine">Runs entirely on your computer. No data is collected.<br>&copy; 2026 Prex Studio. Licensed under Apache 2.0.</p>
+  <form method="dialog"><button class="primary" autofocus>Close</button></form>
+</dialog>
+<script src="/static/diagram.js"></script>
+<script src="/static/render.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

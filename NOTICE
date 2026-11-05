@@ -1,0 +1,18 @@
+LLM Walkthrough
+Copyright 2026 Prex Studio (Anurag Kumar)
+https://prex.studio
+
+Created by Anurag Kumar, Prex Studio.
+
+Licensed under the Apache License, Version 2.0 (see LICENSE). The license
+does not grant permission to use the Prex Studio name, logo or wordmark,
+except to describe where this work comes from (Apache License 2.0,
+section 6).
+
+This product uses third-party work under its own license:
+- Qwen2.5-0.5B-Instruct by the Qwen team, Alibaba Cloud, Apache License 2.0.
+  Not included; downloaded from Hugging Face on first run.
+- Newsreader and Hanken Grotesk fonts, SIL Open Font License 1.1.
+  Included in static/brand/, with their license texts.
+- PyTorch, Hugging Face Transformers, FastAPI and Uvicorn, installed
+  separately, each under its own license.
